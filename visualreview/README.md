@@ -1,67 +1,115 @@
-# Visual Review Skill for Google Antigravity
+# visualreview
 
-A lightweight, zero-dependency in-browser visual feedback loop for web applications, prototypes, and website drafts.
+`visualreview` is an in-browser inspection widget that captures DOM selectors and user comments to automate UI revision loops with LLM coding agents.
 
-Allows developers and reviewers to click or right-click any element on a live screen, add revision notes to text, buttons, and images, and have Antigravity automatically locate the source files and implement the changes.
+---
 
-## Features
+## The Problem: Visual Feedback is Slow and Ambiguous
 
-- **Zero Dependencies**: Pure vanilla JavaScript. Works with vanilla HTML, React, Next.js, Vite, Vue, Svelte, Flask, Django, etc.
-- **Isolated Shadow DOM**: UI styles will never clash with Tailwind, Bootstrap, CSS resets, or app styles.
-- **Persistent Pins**: Feedback pins survive page refreshes and hot module reload (HMR) via `localStorage`.
-- **Intelligent Context Capture**:
-  - CSS Selector paths (e.g. `header > nav > a.active`)
-  - Element tag names and attributes
-  - Current text snippet preview
-  - Image `src` and `alt` attributes
-- **Two-Way Status Synchronization**:
-  - Clicking **"Copy for Agent"** copies a structured prompt to your clipboard and syncs `feedback.md`.
-  - When Antigravity resolves the feedback and marks it completed in `feedback.md`, the browser automatically detects it and clears the pins and badge!
-  - Includes an instant **`[✕ Clear Pins]`** button in the toast notification.
+Iterating on a web UI with an AI coding assistant usually hits a painful friction point. Developers either:
+1. **Write long, fuzzy text prompts:** *"In the third card down, make the subtitle a bit bolder and fix the button margin."* The agent often edits the wrong component.
+2. **Take and crop screenshots:** Burning thousands of vision tokens while forcing the model to guess which CSS file or component template produced the rendered pixels.
 
-## Quick Installation
+`visualreview` replaces this guesswork with exact DOM paths, existing text previews, and attribute snapshots.
 
-### 1. As a Global Antigravity Skill (Recommended)
-Clone or copy this folder into your machine's global Antigravity skills directory:
-
-```bash
-# Windows
-git clone https://github.com/p3ji/own_skill.git %USERPROFILE%\.gemini\config\skills\p3ji_skills
-# Or copy the visualreview folder directly:
-Copy-Item -Recurse visualreview $env:USERPROFILE\.gemini\config\skills\visualreview
-
-# macOS / Linux
-cp -r visualreview ~/.gemini/config/skills/visualreview
+```
+[Browser Preview] ──(Alt + Click)──> [Structured DOM Pin] ──(Copy/Save)──> [feedback.md] ──(Agent Grep)──> [Code Edit]
 ```
 
-Once installed globally, Antigravity will automatically know how to:
-- Inject the review widget into any new or existing project.
-- Read and apply feedback whenever you say *"apply feedback"*.
+### The Scenario
+Imagine you preview a new dashboard. You spot three issues:
+- The header logo is stretched.
+- The checkout button should be emerald green.
+- The welcome banner has a typo.
 
-### 2. In an Existing Project (Manual Drop-in)
-1. Copy `resources/agent-feedback.js` into your project's `public/` or root directory:
-   ```html
-   <script src="/agent-feedback.js"></script>
-   ```
-2. Create an initial `feedback.md` in the project root:
-   ```markdown
-   # Visual Feedback Log
+Instead of writing three descriptive paragraphs, you hold `Alt` and click each element. You type your note directly on the element. You click **"Copy for Agent"**. 
 
-   ## Pending Changes
+The agent receives exact selectors (`header > div.logo > img`, `button#checkout`). It greps the source code in milliseconds, applies the edits, and marks the items resolved. When you switch back to your browser, the pins are already gone.
 
-   ## Resolved
-   ```
+---
 
-## Usage
+## Architecture & Mechanics
 
-1. Open your web app in the browser.
-2. In the bottom-right corner, click **`[✏️ Review]`** (or hold **`Alt` + Click** any element).
-3. Hover over elements to see highlight outlines; click to drop a numbered pin.
-4. Type your feedback (e.g. *"Change button color to deep indigo and make corners rounded"*).
-5. Click **"📋 Copy for Agent"** (or **"💾 Save"**).
-6. In Antigravity chat, paste the prompt or simply say:
-   > *"Apply feedback"*
-7. Antigravity will edit the files and mark the items as resolved. When you switch back to your browser, the pins will automatically disappear!
+The tool operates across four distinct phases:
 
-## License
-MIT
+1. **Client-Side Capture (Zero Dependencies):**  
+   [`agent-feedback.js`](./resources/agent-feedback.js) mounts inside an isolated Shadow DOM. Host styles (Tailwind resets, Bootstrap, global CSS) never distort the widget, and widget styles never bleed into your app. Clicking an element computes a deterministic CSS path, extracts text or `src` attributes, and stores the pin in browser `localStorage`.
+
+2. **Dual-Channel Dispatch:**  
+   Clicking **"Copy for Agent"** formats a clean Markdown payload to your clipboard and immediately issues a background `POST /api/feedback` to your local dev server. If you run offline without a server, an immediate toast button lets you wipe the screen with one click.
+
+3. **Grep-Driven Resolution:**  
+   You tell Antigravity *"Apply feedback"*. Rather than guessing, the agent greps your repo for the exact selector, tag, or text snippet. It edits the source code and flips the checkbox in `feedback.md` from `- [ ]` to `- [x]`.
+
+4. **Heartbeat Auto-Clear:**  
+   The widget polls `GET /api/feedback` when the browser tab gains focus and on a 3-second heartbeat. Once all items are marked resolved, the client flushes `localStorage`, removes the pins, and resets the badge counter to zero.
+
+---
+
+## Why Not Just Paste Screenshots?
+
+> **You might wonder: why not feed visual screenshots to multi-modal models?**
+
+Screenshots look convenient, but they introduce two serious engineering penalties:
+
+- **Token Cost:** A single screenshot consumes 1,200 to 2,000+ vision tokens. A structured DOM pin payload costs roughly 150 prompt tokens.
+- **Grounding Latency:** Vision models must visually parse layouts, guess CSS classes, and infer file names. A DOM selector (`nav.view-tabs > a.active`) allows an agent to use ripgrep to find the exact line of code in under 200 milliseconds.
+
+| Dimension | Screenshot + Vision LLM | visualreview DOM Payload |
+| :--- | :--- | :--- |
+| **Token Consumption** | ~1,600 tokens / image | ~150 tokens / element |
+| **File Resolution** | Guesswork based on visual layout | Exact ripgrep match via selector/text |
+| **HMR Persistence** | Lost on refresh | Persisted in `localStorage` |
+| **Loop Closure** | Manual visual re-check | Auto-clears pins upon file edit |
+
+---
+
+## Installation
+
+### Option 1: Global Antigravity Skill (Recommended)
+Install once to make the skill available across all your projects:
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/p3ji/own_skill.git $env:USERPROFILE\.gemini\config\skills\p3ji_skills
+```
+
+```bash
+# macOS / Linux
+git clone https://github.com/p3ji/own_skill.git ~/.gemini/config/skills/p3ji_skills
+```
+
+Once installed, tell Antigravity:
+> *"Add visual review widget to this project"*
+
+Antigravity copies the asset and wires the script tag into your project automatically.
+
+### Option 2: Standalone Manual Drop-In
+If you do not use Antigravity globally, drop the script into any HTML page or template:
+
+```html
+<!-- Add before </body> -->
+<script src="/agent-feedback.js"></script>
+```
+
+And initialize an empty `feedback.md` in your project root:
+```markdown
+# Visual Feedback Log
+
+## Pending Changes
+
+## Resolved
+```
+
+---
+
+## When to Use and When NOT to Use
+
+#### When to Use
+- **Draft & Prototype Iteration:** Rapidly tweaking layouts, text, button states, and CSS spacing with an AI agent.
+- **Component Review:** Pinpointing specific elements across multi-page web apps or component libraries.
+- **Batch Feedback:** Dropping 5–10 revision pins in one review pass before letting the agent batch-process them.
+
+#### When NOT to Use
+- **Backend Services:** CLI tools, data pipelines, or headless APIs with no browser surface.
+- **HTML5 Canvas / WebGL:** Games or complex canvas graphics where internal visual objects do not exist as distinct DOM nodes.

@@ -1,68 +1,61 @@
 # own_skill
 
-> Personal and curated skills repository for [Google Antigravity](https://antigravity.google) AI coding assistant.
+A collection of operational skills for [Google Antigravity](https://antigravity.google) AI coding agents.
 
-This repository contains reusable skills that can be installed globally or per-workspace to extend Antigravity's capabilities across any project.
-
-## Available Skills
-
-| Skill | Description | Path |
-| :--- | :--- | :--- |
-| [**`visualreview`**](./visualreview/) | In-app visual review & feedback loop. Click any element on screen to drop revision notes, export structured feedback, and have Antigravity automatically update the code and clear resolved pins. | [`visualreview/`](./visualreview/) |
+Skills in this repository teach Antigravity specific workflows, inspectable runbooks, and client-side tooling. Install them globally to make them available across all projects on your machine, or drop them into an individual repository's `.agents/skills/` directory.
 
 ---
 
-## How to Install Skills
+## Catalog
 
-### Option A: Install Globally (All Projects)
+| Skill | Purpose | Path |
+| :--- | :--- | :--- |
+| [**`visualreview`**](./visualreview/) | In-browser visual inspection widget. Click live elements to drop revision notes, export deterministic DOM paths to the agent, and auto-clear pins when edits land. | [`visualreview/`](./visualreview/) |
 
-To make a skill available across every project on your machine, clone or copy the skill folder into your Antigravity global skills directory:
+---
+
+## Installation
+
+### 1. Global Setup (All Projects)
+
+Clone the repository into your machine's global Antigravity skills path. The agent automatically discovers all subdirectories:
 
 **Windows (PowerShell):**
 ```powershell
-# Clone entire repo into global skills
 git clone https://github.com/p3ji/own_skill.git $env:USERPROFILE\.gemini\config\skills\p3ji_skills
-
-# Or install just the visualreview skill:
-New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini\config\skills\visualreview | Out-Null
-Copy-Item -Recurse visualreview\* $env:USERPROFILE\.gemini\config\skills\visualreview\
 ```
 
 **macOS / Linux:**
 ```bash
-# Clone entire repo into global skills
 git clone https://github.com/p3ji/own_skill.git ~/.gemini/config/skills/p3ji_skills
-
-# Or install just the visualreview skill:
-mkdir -p ~/.gemini/config/skills/visualreview
-cp -r visualreview/* ~/.gemini/config/skills/visualreview/
 ```
 
-### Option B: Install in a Specific Workspace
+### 2. Workspace Setup (Single Project)
 
-If you want a skill active only in a specific project repository, copy the skill folder into `.agents/skills/`:
+To bind a skill to a single codebase without global installation, copy the skill directory into your project's `.agents/skills/` folder:
 
 ```bash
 mkdir -p .agents/skills/visualreview
 cp -r path/to/own_skill/visualreview/* .agents/skills/visualreview/
 ```
 
-Antigravity will automatically discover and load the skill when you open that repository.
+Antigravity discovers workspace skills hierarchically by walking up from the current directory to the repository root.
 
 ---
 
-## Contributing & Adding Skills
+## Skill Architecture
 
-Skills follow the standard Antigravity skill layout:
+Every skill follows the Antigravity specification:
+
 ```text
 skills/<skill_name>/
-├── SKILL.md          # Main instruction file with YAML frontmatter (name, description)
-├── README.md         # Documentation for humans
-├── resources/        # Optional: Scripts, templates, and assets
-├── scripts/          # Optional: Executable CLI utilities
-└── references/       # Optional: In-depth technical references
+├── SKILL.md          # Machine-readable instructions + frontmatter trigger
+├── README.md         # Practitioner documentation
+└── resources/        # Scripts, binaries, and client assets
 ```
+
+`SKILL.md` defines *when* the agent activates and *how* it executes commands. The agent progressively loads skill instructions into context only when triggered, preventing prompt token bloat.
 
 ## Author
 
-Created by [@p3ji](https://github.com/p3ji).
+[@p3ji](https://github.com/p3ji)
