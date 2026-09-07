@@ -1,24 +1,23 @@
 # own_skill
 
-A collection of operational skills for [Google Antigravity](https://antigravity.google) AI coding agents.
+A repository of developer skills, tools, and runbooks designed to accelerate prototyping and development with AI coding agents.
 
-Skills in this repository teach Antigravity specific workflows, inspectable runbooks, and client-side tooling. Install them globally to make them available across all projects on your machine, or drop them into an individual repository's `.agents/skills/` directory.
+While configured to mount natively into [Google Antigravity](https://antigravity.google), the tools and specifications here are agent-agnostic: they work seamlessly with **Cursor, Claude Code, Windsurf, GitHub Copilot, Aider**, or custom LLM pipelines.
 
 ---
 
 ## Catalog
 
-| Skill | Purpose | Path |
-| :--- | :--- | :--- |
-| [**`visualreview`**](./visualreview/) | In-browser visual inspection widget. Click live elements to drop revision notes, export deterministic DOM paths to the agent, and auto-clear pins when edits land. | [`visualreview/`](./visualreview/) |
+| Skill | Purpose | Agent Compatibility | Path |
+| :--- | :--- | :--- | :--- |
+| [**`visualreview`**](./visualreview/) | In-browser visual inspection widget. Click live elements to drop revision notes, export deterministic DOM paths, and accelerate UI feedback loops. | Universal (Antigravity, Cursor, Claude Code, Copilot, ChatGPT) | [`visualreview/`](./visualreview/) |
 
 ---
 
-## Installation
+## Installation & Setup
 
-### 1. Global Setup (All Projects)
-
-Clone the repository into your machine's global Antigravity skills path. The agent automatically discovers all subdirectories:
+### 1. In Google Antigravity (Global Skill)
+Clone directly into your Antigravity global skills directory:
 
 **Windows (PowerShell):**
 ```powershell
@@ -30,31 +29,22 @@ git clone https://github.com/p3ji/own_skill.git $env:USERPROFILE\.gemini\config\
 git clone https://github.com/p3ji/own_skill.git ~/.gemini/config/skills/p3ji_skills
 ```
 
-### 2. Workspace Setup (Single Project)
-
-To bind a skill to a single codebase without global installation, copy the skill directory into your project's `.agents/skills/` folder:
-
-```bash
-mkdir -p .agents/skills/visualreview
-cp -r path/to/own_skill/visualreview/* .agents/skills/visualreview/
-```
-
-Antigravity discovers workspace skills hierarchically by walking up from the current directory to the repository root.
+### 2. In Cursor / Claude Code / Windsurf / Any Project
+Drop the desired tool directly into your codebase:
+1. Copy the client script (e.g. `visualreview/resources/agent-feedback.js`) into your project.
+2. Follow the setup steps in each skill's [`README.md`](./visualreview/README.md).
 
 ---
 
-## Skill Architecture
+## Contributing
 
-Every skill follows the Antigravity specification:
-
+Skills follow a standard three-part structure:
 ```text
 skills/<skill_name>/
 ├── SKILL.md          # Machine-readable instructions + frontmatter trigger
-├── README.md         # Practitioner documentation
+├── README.md         # Practitioner documentation (Chip Style)
 └── resources/        # Scripts, binaries, and client assets
 ```
-
-`SKILL.md` defines *when* the agent activates and *how* it executes commands. The agent progressively loads skill instructions into context only when triggered, preventing prompt token bloat.
 
 ## Author
 
