@@ -439,6 +439,16 @@
     });
   }
 
+  function setTargetInfo(el, info) {
+    el.textContent = '';
+    const strong = document.createElement('strong');
+    strong.textContent = `<${info.tag}>`;
+    el.appendChild(strong);
+    el.appendChild(document.createTextNode(` ${info.selector}`));
+    el.appendChild(document.createElement('br'));
+    el.appendChild(document.createTextNode(info.preview || info.attrInfo || ''));
+  }
+
   function openCreateModal(el, x, y) {
     activePinIndex = -1;
     const summary = getElementSummary(el);
@@ -452,7 +462,7 @@
       url: window.location.pathname + window.location.search
     };
 
-    targetInfo.innerHTML = `<strong>&lt;${summary.tag}&gt;</strong> ${summary.selector}<br/>${summary.preview || summary.attrInfo || ''}`;
+    setTargetInfo(targetInfo, summary);
     commentInput.value = '';
     deletePinBtn.style.display = 'none';
     modal.classList.add('open');
@@ -462,7 +472,7 @@
   function openEditModal(index) {
     activePinIndex = index;
     const pin = pins[index];
-    targetInfo.innerHTML = `<strong>&lt;${pin.tag}&gt;</strong> ${pin.selector}<br/>${pin.preview || pin.attrInfo || ''}`;
+    setTargetInfo(targetInfo, pin);
     commentInput.value = pin.comment;
     deletePinBtn.style.display = 'inline-block';
     modal.classList.add('open');
@@ -685,7 +695,9 @@
   });
 
   // Check if feedback items have been completed by the agent on the dev server
+  const canPollServer = /^https?:$/.test(window.location.protocol);
   async function checkServerSync() {
+    if (!canPollServer) return;
     try {
       const res = await fetch('/api/feedback');
       if (!res.ok) return;
@@ -700,11 +712,15 @@
     } catch (e) {}
   }
 
-  window.addEventListener('focus', checkServerSync);
-  setInterval(checkServerSync, 3000);
+  if (canPollServer) {
+    window.addEventListener('focus', checkServerSync);
+    setInterval(() => {
+      if (!document.hidden) checkServerSync();
+    }, 3000);
+  }
 
   // Initial load
   updateBadge();
   renderPins();
-  checkServerSync();
+  if (canPollServer) checkServerSync();
 })();
